@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local AgentBeats / Docker Compose outputs
+.env.local
+docker-compose.yml
+a2a-scenario.toml
+output/
+dump/
+*.log
