@@ -16,7 +16,6 @@ The helper-aware experiment is preserved separately in [`helper_prompts.py`](hel
 | [`helper_prompts.py`](helper_prompts.py) | Archived helper-aware prompt, not used at runtime |
 | [`output.py`](output.py) | Lightweight MALT output guard |
 | [`litellm_backend.py`](litellm_backend.py) | LiteLLM call path, prompt assembly, one retry on invalid output |
-| [`conversation.py`](conversation.py) | Small per-context message history store |
 | [`executor.py`](executor.py) | A2A executor wrapper |
 | [`LOCAL_BENCHMARK.md`](LOCAL_BENCHMARK.md) | Local Docker benchmark recipe |
 
@@ -33,6 +32,8 @@ The active MALT prompt asks the model to:
 - Keep `updated_graph` safe for mutation-then-text/list/count/rank tasks unless the user explicitly asks for a graph.
 
 The active prompt and active few-shot examples are in [`prompts.py`](prompts.py). They do not contain `solid_step_*` helper calls.
+
+MALT is treated as one-shot: the agent does not keep or replay conversation history across requests. The few-shot examples are static prompt examples prepended to each request by default.
 
 The output guard checks only response shape and obvious unsafe/invalid code:
 

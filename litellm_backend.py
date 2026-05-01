@@ -67,23 +67,20 @@ class LiteLLMAgent:
 
     def _build_base_messages(
         self,
-        history: list[dict[str, str]],
         user_content: str,
     ) -> list[dict[str, str]]:
         messages: list[dict[str, str]] = [{"role": "system", "content": MALT_SYSTEM_PROMPT}]
         for ex in MALT_FEW_SHOT_TURNS:
             messages.append({"role": "user", "content": ex["user"]})
             messages.append({"role": "assistant", "content": ex["assistant"]})
-        messages.extend(history)
         messages.append({"role": "user", "content": user_content})
         return messages
 
     async def invoke(
         self,
         input_text: str,
-        history: list[dict[str, str]],
     ) -> str:
-        messages = self._build_base_messages(history, input_text)
+        messages = self._build_base_messages(input_text)
         result = await self._stream_to_text(messages)
 
         if validate_malt_output(result):
