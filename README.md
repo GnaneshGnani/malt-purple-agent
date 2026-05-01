@@ -103,4 +103,10 @@ Docker image URL: ghcr.io/gnaneshgnani/malt-purple-agent:v1
 Repository link: https://github.com/GnaneshGnani/malt-purple-agent
 ```
 
+If the AgentBeats form asks for an Amber manifest URL, use:
+
+```text
+https://raw.githubusercontent.com/GnaneshGnani/malt-purple-agent/main/amber-manifest.json5
+```
+
 For official leaderboard runs, the scenario file must use the registered `agentbeats_id`. Local `image = ...` scenarios are only for machine-local testing.

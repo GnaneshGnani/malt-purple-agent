@@ -1,0 +1,46 @@
+{
+  manifest_version: "0.1.0",
+
+  // Config required from the deployer at launch time.
+  config_schema: {
+    type: "object",
+    properties: {
+      nebius_api_key: {
+        type: "string",
+        secret: true,
+        description: "Nebius/OpenAI-compatible API key used by LiteLLM.",
+      },
+    },
+    required: ["nebius_api_key"],
+    additionalProperties: false,
+  },
+
+  // External services this agent can connect to.
+  slots: {
+    proxy: { kind: "a2a", optional: true },
+  },
+
+  // Runtime configuration.
+  program: {
+    image: "ghcr.io/gnaneshgnani/malt-purple-agent:v1",
+    entrypoint: "python server.py --host 0.0.0.0 --port 9009",
+    env: {
+      NEBIUS_API_KEY: "${config.nebius_api_key}",
+      NEBIUS_API_BASE: "https://api.studio.nebius.ai/v1",
+      MODEL_NAME: "openai/Qwen/Qwen3-Next-80B-A3B-Thinking",
+    },
+    network: {
+      endpoints: [
+        { name: "a2a_endpoint", port: 9009 },
+      ],
+    },
+  },
+
+  // Capabilities provided by this agent.
+  provides: {
+    a2a: { kind: "a2a", endpoint: "a2a_endpoint" },
+  },
+
+  // Capabilities exposed to the scenario.
+  exports: { a2a: "a2a" },
+}
