@@ -4,7 +4,7 @@ AgentBeats-compatible purple agent for the NetArena MALT data-center planning be
 
 This repo uses the **no-helper safety/few-shot prompt** for the public submission. The running agent does not mention or call benchmark helper functions such as `solid_step_*`; it asks the model to generate ordinary NetworkX code and applies a lightweight output guard before returning the response.
 
-The helper-aware experiment is preserved separately in [`helper_prompts.py`](helper_prompts.py). That file is intentionally not imported by the runtime.
+The helper-aware experiment is preserved separately in [`helper_prompts.py`](helper_prompts.py) for later reference. That file is intentionally not imported by the runtime and is excluded from the Docker build context.
 
 ## Layout
 
@@ -14,9 +14,8 @@ The helper-aware experiment is preserved separately in [`helper_prompts.py`](hel
 | [`cli.py`](cli.py) | CLI args and default model selection |
 | [`prompts.py`](prompts.py) | Active no-helper MALT prompt and few-shot examples |
 | [`helper_prompts.py`](helper_prompts.py) | Archived helper-aware prompt, not used at runtime |
-| [`output.py`](output.py) | Lightweight output guard for route/MALT responses |
+| [`output.py`](output.py) | Lightweight MALT output guard |
 | [`litellm_backend.py`](litellm_backend.py) | LiteLLM call path, prompt assembly, one retry on invalid output |
-| [`benchmarks.py`](benchmarks.py) | Benchmark detection from incoming prompt text |
 | [`conversation.py`](conversation.py) | Small per-context message history store |
 | [`executor.py`](executor.py) | A2A executor wrapper |
 | [`LOCAL_BENCHMARK.md`](LOCAL_BENCHMARK.md) | Local Docker benchmark recipe |
@@ -32,6 +31,8 @@ The active MALT prompt asks the model to:
 - Create `EK_PORT` nodes with `physical_capacity_bps=1000`.
 - Create `EK_PACKET_SWITCH` nodes with at least one child `EK_PORT`.
 - Keep `updated_graph` safe for mutation-then-text/list/count/rank tasks unless the user explicitly asks for a graph.
+
+The active prompt and active few-shot examples are in [`prompts.py`](prompts.py). They do not contain `solid_step_*` helper calls.
 
 The output guard checks only response shape and obvious unsafe/invalid code:
 

@@ -12,3 +12,6 @@ dump/
 docker-compose.yml
 a2a-scenario.toml
 *.log
+
+# Archived prompt notes are not part of the submitted runtime image.
+helper_prompts.py

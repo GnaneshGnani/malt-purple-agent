@@ -3,7 +3,6 @@ from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.utils import new_agent_text_message
 
-from benchmarks import detect_benchmark
 from conversation import conversation_store
 from litellm_backend import LiteLLMAgent
 
@@ -18,7 +17,6 @@ class LiteLLMAgentExecutor(AgentExecutor):
         event_queue: EventQueue,
     ) -> None:
         input_text = context.get_user_input()
-        benchmark = detect_benchmark(input_text)
 
         context_id: str | None = None
         msg = getattr(context, "message", None)
@@ -33,8 +31,8 @@ class LiteLLMAgentExecutor(AgentExecutor):
         if context_id:
             history = conversation_store.load(context_id)
 
-        result = await self.agent.invoke(input_text, benchmark, history)
-        logger.info(f"LLM response length: {len(result)} chars (benchmark={benchmark})")
+        result = await self.agent.invoke(input_text, history)
+        logger.info(f"LLM response length: {len(result)} chars")
 
         if context_id:
             new_hist = history + [

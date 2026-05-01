@@ -1,132 +1,44 @@
 from __future__ import annotations
 
 
-SYSTEM_PROMPTS: dict[str, str] = {
-    "route": (
-        "You are an expert network engineer debugging a Mininet virtual network.\n"
-        "The network has packet loss due to a misconfiguration on the router.\n"
-        "You must diagnose the problem and fix it using shell commands.\n"
-        "Rules:\n"
-        "- Output ONLY a JSON object with exactly two keys: 'machine' (the node name "
-        "to run the command on) and 'command' (a single shell command).\n"
-        "- Do NOT include sudo. Do NOT use vtysh. Do NOT use ping commands.\n"
-        "- Node and interface names have a prefix (e.g. 'p29_r0', 'p29_r0-eth1').\n"
-        "- Run one diagnostic command first to identify the root cause, then fix it.\n"
-        "- Do not break connections that are currently working.\n"
-        'Output format (strict): {"machine": "<node>", "command": "<cmd>"}'
-    ),
-    "malt": (
-        "You are a Python expert working with NetworkX graphs representing data center topologies.\n"
-        "You will receive a question asking you to mutate or query a graph.\n"
-        "Rules:\n"
-        "- Output ONLY a Python function named process_graph(graph_data) inside a ```python code block.\n"
-        "- Do not include import statements. The names copy, nx, json, and math are available.\n"
-        "- Use normal NetworkX graph operations and small local helper functions inside process_graph.\n"
-        "- Use only the listed global names plus variables/functions you define inside process_graph.\n"
-        "- Always work on graph_copy = copy.deepcopy(graph_data); never mutate graph_data directly.\n"
-        "- Always return exactly one dict with keys 'type', 'data', and 'updated_graph'.\n"
-        "- The 'type' value must be one of 'text', 'list', 'table', or 'graph'. For counts, return "
-        "'type': 'text' and make 'data' a string. For list/rank queries, return 'type': 'list'.\n"
-        "- For graph outputs, set both 'data' and 'updated_graph' to the updated NetworkX graph object "
-        "or to nx.readwrite.json_graph.node_link_data(graph_copy).\n"
-        "- For text/list/table outputs without mutation, compute from graph_copy and return graph_copy as "
-        "'updated_graph'. For add/remove/update-then-text/list/table outputs, compute the requested answer "
-        "from working_graph, but return safety_graph = copy.deepcopy(graph_data) as 'updated_graph' unless "
-        "the user explicitly asks you to return a graph.\n"
-        "- MALT hierarchy uses directed edges whose edge attribute type contains 'RK_CONTAINS'; parent nodes "
-        "point to child nodes.\n"
-        "- Node attributes include 'name' and 'type'. A node's type may be a string or a list, so check both.\n"
-        "- Use node attributes for lookup: attrs.get('name') == target. Do not infer by prefixes or rely on "
-        "node.startswith.\n"
-        "- To count descendants, do BFS/DFS over outgoing RK_CONTAINS edges from the parent.\n"
-        "- To list direct children, only return the 'name' attributes of immediate RK_CONTAINS successors.\n"
-        "- To rank direct children by physical_capacity_bps, sum capacity from EK_PORT nodes in each child's "
-        "contained subtree and sort by capacity descending.\n"
-        "- New EK_PORT nodes must have physical_capacity_bps=1000.\n"
-        "- New EK_PACKET_SWITCH nodes must have at least one EK_PORT child with nonzero capacity; "
-        "create a child port and connect it with an RK_CONTAINS edge.\n"
-        "- Valid node types are EK_SUPERBLOCK, EK_CHASSIS, EK_RACK, EK_AGG_BLOCK, EK_JUPITER, EK_PORT, "
-        "EK_SPINEBLOCK, EK_PACKET_SWITCH, EK_CONTROL_POINT, EK_CONTROL_DOMAIN. Do not output typos "
-        "like EK_PACKET SWITCH.\n"
-        "- For graph-return remove tasks, match the requested removal exactly and return the updated graph. "
-        "For remove/add/update-then-list/count/rank/text requests, apply the mutation on working_graph only "
-        "to compute 'data', then use copy.deepcopy(graph_data) as 'updated_graph' for safety.\n"
-        "- Do not print or log anything. Only return the result dict."
-    ),
-    "k8s": (
-        "You are a Kubernetes network policy expert. A microservice deployment has "
-        "connectivity mismatches due to incorrect NetworkPolicy resources.\n"
-        "Rules:\n"
-        "- Diagnose using kubectl get/describe commands first.\n"
-        "- Fix using kubectl patch or by providing corrected YAML.\n"
-        "- Output one command at a time as plain text.\n"
-        "- Do not break currently working connections."
-    ),
-}
-
-ROUTE_FEW_SHOT_TURNS: list[dict[str, str]] = [
-    {
-        "user": """
-    p29_h1 -> p29_h2 X X p29_r0
-    p29_h2 -> p29_h1 X X p29_r0
-    p29_h3 -> X X p29_h4 p29_r0
-    p29_h4 -> X X p29_h3 p29_r0
-    p29_r0 -> p29_h1 p29_h2 p29_h3 p29_h4
-    *** Results: 40% dropped (12/20 received)
-        """.strip(),
-        "assistant": '{"machine": "p29_r0", "command": "sysctl net.ipv4.ip_forward"}',
-    },
-    {
-        "user": """
-    p29_h1 -> p29_h2 X X X
-    p29_h2 -> p29_h1 X X X
-    p29_h3 -> X X p29_h4 p29_r0
-    p29_h4 -> X X p29_h3 p29_r0
-    p29_r0 -> X X p29_h3 p29_h4
-    *** Results: 60% dropped (8/20 received)
-""".strip(),
-        "assistant": '{"machine": "p29_r0", "command": "ip link show"}',
-    },
-    {
-        "user": """
-    p29_h1 -> p29_h2 X X p29_r0
-    p29_h2 -> h1 X X p29_r0
-    p29_h3 -> X X p29_h4 X
-    p29_h4 -> X X p29_h3 X
-    p29_r0 -> p29_h1 p29_h2 X X
-    *** Results: 60% dropped (8/20 received)
-        """.strip(),
-        "assistant": '{"machine": "p29_r0", "command": "iptables -L -v --line-numbers"}',
-    },
-    {
-        "user": """
-    p29_h1 -> p29_h2 X X X X X
-    p29_h2 -> p29_h1 X X X X X
-    p29_h3 -> X X p29_h4 p29_h5 p29_h6 p29_r0
-    p29_h4 -> X X p29_h3 p29_h5 p29_h6 p29_r0
-    p29_h5 -> X X p29_h3 p29_h4 p29_h6 p29_r0
-    p29_h6 -> X X p29_h3 p29_h4 p29_h5 p29_r0
-    p29_r0 -> X X p29_h3 p29_h4 p29_h5 p29_h6
-    *** Results: 47% dropped (22/42 received)
-""".strip(),
-        "assistant": '{"machine": "p29_r0", "command": "ip route"}',
-    },
-    {
-        "user": """
-    p29_h1 -> p29_h2 p29_h3 p29_h4 X X X X p29_r0
-    p29_h2 -> p29_h1 p29_h3 p29_h4 X X X X p29_r0
-    p29_h3 -> p29_h1 p29_h2 p29_h4 X X X X p29_r0
-    p29_h4 -> p29_h1 p29_h2 p29_h3 X X X X p29_r0
-    p29_h5 -> X X X X p29_h6 p29_h7 p29_h8 X
-    p29_h6 -> X X X X p29_h5 p29_h7 p29_h8 X
-    p29_h7 -> X X X X p29_h5 p29_h6 p29_h8 X
-    p29_h8 -> X X X X p29_h5 p29_h6 p29_h7 X
-    p29_r0 -> p29_h1 p29_h2 p29_h3 p29_h4 X X X X
-    *** Results: 55% dropped (32/72 received)
-""".strip(),
-        "assistant": '{"machine": "p29_r0", "command": "ip addr show dev p29_r0-eth2"}',
-    },
-]
+MALT_SYSTEM_PROMPT = (
+    "You are a Python expert working with NetworkX graphs representing data center topologies.\n"
+    "You will receive a question asking you to mutate or query a graph.\n"
+    "Rules:\n"
+    "- Output ONLY a Python function named process_graph(graph_data) inside a ```python code block.\n"
+    "- Do not include import statements. The names copy, nx, json, and math are available.\n"
+    "- Use normal NetworkX graph operations and small local helper functions inside process_graph.\n"
+    "- Use only the listed global names plus variables/functions you define inside process_graph.\n"
+    "- Always work on graph_copy = copy.deepcopy(graph_data); never mutate graph_data directly.\n"
+    "- Always return exactly one dict with keys 'type', 'data', and 'updated_graph'.\n"
+    "- The 'type' value must be one of 'text', 'list', 'table', or 'graph'. For counts, return "
+    "'type': 'text' and make 'data' a string. For list/rank queries, return 'type': 'list'.\n"
+    "- For graph outputs, set both 'data' and 'updated_graph' to the updated NetworkX graph object "
+    "or to nx.readwrite.json_graph.node_link_data(graph_copy).\n"
+    "- For text/list/table outputs without mutation, compute from graph_copy and return graph_copy as "
+    "'updated_graph'. For add/remove/update-then-text/list/table outputs, compute the requested answer "
+    "from working_graph, but return safety_graph = copy.deepcopy(graph_data) as 'updated_graph' unless "
+    "the user explicitly asks you to return a graph.\n"
+    "- MALT hierarchy uses directed edges whose edge attribute type contains 'RK_CONTAINS'; parent nodes "
+    "point to child nodes.\n"
+    "- Node attributes include 'name' and 'type'. A node's type may be a string or a list, so check both.\n"
+    "- Use node attributes for lookup: attrs.get('name') == target. Do not infer by prefixes or rely on "
+    "node.startswith.\n"
+    "- To count descendants, do BFS/DFS over outgoing RK_CONTAINS edges from the parent.\n"
+    "- To list direct children, only return the 'name' attributes of immediate RK_CONTAINS successors.\n"
+    "- To rank direct children by physical_capacity_bps, sum capacity from EK_PORT nodes in each child's "
+    "contained subtree and sort by capacity descending.\n"
+    "- New EK_PORT nodes must have physical_capacity_bps=1000.\n"
+    "- New EK_PACKET_SWITCH nodes must have at least one EK_PORT child with nonzero capacity; "
+    "create a child port and connect it with an RK_CONTAINS edge.\n"
+    "- Valid node types are EK_SUPERBLOCK, EK_CHASSIS, EK_RACK, EK_AGG_BLOCK, EK_JUPITER, EK_PORT, "
+    "EK_SPINEBLOCK, EK_PACKET_SWITCH, EK_CONTROL_POINT, EK_CONTROL_DOMAIN. Do not output typos "
+    "like EK_PACKET SWITCH.\n"
+    "- For graph-return remove tasks, match the requested removal exactly and return the updated graph. "
+    "For remove/add/update-then-list/count/rank/text requests, apply the mutation on working_graph only "
+    "to compute 'data', then use copy.deepcopy(graph_data) as 'updated_graph' for safety.\n"
+    "- Do not print or log anything. Only return the result dict."
+)
 
 MALT_FEW_SHOT_TURNS: list[dict[str, str]] = [
     {
@@ -336,11 +248,6 @@ MALT_FEW_SHOT_TURNS: list[dict[str, str]] = [
         ),
     },
 ]
-
-ROUTE_RETRY_PROMPT = (
-    "Your previous output was not valid JSON with 'machine' and 'command' keys. "
-    'Output ONLY the JSON object, nothing else: {"machine": "...", "command": "..."}'
-)
 
 MALT_RETRY_PROMPT = (
     "Your previous output was not valid MALT code. Output ONLY one ```python code block with "

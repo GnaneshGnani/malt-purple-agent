@@ -1,40 +1,7 @@
 from __future__ import annotations
 
 import ast
-import json
 import re
-
-
-def extract_first_json_object(text: str) -> str | None:
-    start = text.find("{")
-    if start < 0:
-        return None
-    depth = 0
-    for i in range(start, len(text)):
-        c = text[i]
-        if c == "{":
-            depth += 1
-        elif c == "}":
-            depth -= 1
-            if depth == 0:
-                return text[start : i + 1]
-    return None
-
-
-def validate_route_output(text: str) -> tuple[bool, str | None]:
-    raw = extract_first_json_object(text)
-    if not raw:
-        return False, None
-    try:
-        obj = json.loads(raw)
-    except json.JSONDecodeError:
-        return False, None
-    if not isinstance(obj, dict):
-        return False, None
-    m, cmd = obj.get("machine"), obj.get("command")
-    if not isinstance(m, str) or not isinstance(cmd, str) or not m.strip() or not cmd.strip():
-        return False, None
-    return True, json.dumps({"machine": m.strip(), "command": cmd.strip()})
 
 
 def extract_python_fence(text: str) -> str | None:

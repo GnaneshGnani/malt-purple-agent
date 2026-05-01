@@ -10,13 +10,11 @@ from litellm import (
     ModelResponseStream,
 )
 
-from output import validate_malt_output, validate_route_output
+from output import validate_malt_output
 from prompts import (
     MALT_FEW_SHOT_TURNS,
     MALT_RETRY_PROMPT,
-    ROUTE_FEW_SHOT_TURNS,
-    ROUTE_RETRY_PROMPT,
-    SYSTEM_PROMPTS,
+    MALT_SYSTEM_PROMPT,
 )
 
 
@@ -69,21 +67,13 @@ class LiteLLMAgent:
 
     def _build_base_messages(
         self,
-        benchmark: str | None,
         history: list[dict[str, str]],
         user_content: str,
     ) -> list[dict[str, str]]:
-        messages: list[dict[str, str]] = []
-        if benchmark and benchmark in SYSTEM_PROMPTS:
-            messages.append({"role": "system", "content": SYSTEM_PROMPTS[benchmark]})
-        if benchmark == "route":
-            for ex in ROUTE_FEW_SHOT_TURNS:
-                messages.append({"role": "user", "content": ex["user"]})
-                messages.append({"role": "assistant", "content": ex["assistant"]})
-        if benchmark == "malt":
-            for ex in MALT_FEW_SHOT_TURNS:
-                messages.append({"role": "user", "content": ex["user"]})
-                messages.append({"role": "assistant", "content": ex["assistant"]})
+        messages: list[dict[str, str]] = [{"role": "system", "content": MALT_SYSTEM_PROMPT}]
+        for ex in MALT_FEW_SHOT_TURNS:
+            messages.append({"role": "user", "content": ex["user"]})
+            messages.append({"role": "assistant", "content": ex["assistant"]})
         messages.extend(history)
         messages.append({"role": "user", "content": user_content})
         return messages
@@ -91,34 +81,15 @@ class LiteLLMAgent:
     async def invoke(
         self,
         input_text: str,
-        benchmark: str | None,
         history: list[dict[str, str]],
     ) -> str:
-        messages = self._build_base_messages(benchmark, history, input_text)
+        messages = self._build_base_messages(history, input_text)
         result = await self._stream_to_text(messages)
 
-        if benchmark == "route":
-            ok, cleaned = validate_route_output(result)
-            if ok and cleaned is not None:
-                return cleaned
-            retry_messages = messages + [
-                {"role": "assistant", "content": result},
-                {"role": "user", "content": ROUTE_RETRY_PROMPT},
-            ]
-            result2 = await self._stream_to_text(retry_messages)
-            ok2, cleaned2 = validate_route_output(result2)
-            if ok2 and cleaned2 is not None:
-                return cleaned2
-            return result2
-
-        if benchmark == "malt":
-            if validate_malt_output(result):
-                return result
-            retry_messages = messages + [
-                {"role": "assistant", "content": result},
-                {"role": "user", "content": MALT_RETRY_PROMPT},
-            ]
-            result2 = await self._stream_to_text(retry_messages)
-            return result2
-
-        return result
+        if validate_malt_output(result):
+            return result
+        retry_messages = messages + [
+            {"role": "assistant", "content": result},
+            {"role": "user", "content": MALT_RETRY_PROMPT},
+        ]
+        return await self._stream_to_text(retry_messages)

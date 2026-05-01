@@ -4,10 +4,10 @@ These steps run the MALT green agent against this purple agent with Docker Compo
 
 ## 1. Build Images
 
-From the purple-agent repo:
+From this purple-agent repo:
 
 ```bash
-cd /data2/gnanesh/ProjectNetArena/malt_sweeps/nohelper_safety_fewshot_top3_20260429_123644/nohelper_purple_context
+cd /data2/gnanesh/ProjectNetArena/malt-purple-agent
 docker build --platform linux/amd64 -t malt-purple-agent:local .
 ```
 
