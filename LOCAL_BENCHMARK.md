@@ -50,9 +50,9 @@ TOML
 
 For a quick smoke test, set `num_queries = 1`.
 
-The purple image defaults to no few-shot examples. To test few-shot, generate
-the compose files first, then add `--few-shot` to the `malt_operator` service
-`command` in `docker-compose.yml`.
+The purple image defaults to no few-shot examples. To test few-shot, add
+`MALT_FEW_SHOT = "1"` under `[participants.env]` in the local scenario before
+generating the compose files.
 
 ## 3. Generate Compose Files
 

@@ -33,7 +33,7 @@ The active MALT prompt asks the model to:
 
 The active prompt and optional few-shot examples are in [`prompts.py`](prompts.py). They do not contain `solid_step_*` helper calls.
 
-MALT is treated as one-shot: the agent does not keep or replay conversation history across requests. Few-shot examples are disabled by default. Pass `--few-shot` to prepend the static examples to each request.
+MALT is treated as one-shot: the agent does not keep or replay conversation history across requests. Few-shot examples are disabled by default. Pass `--few-shot`, or set `MALT_FEW_SHOT=1`, to prepend the static examples to each request.
 
 The output guard checks only response shape and obvious unsafe/invalid code:
 
@@ -86,7 +86,7 @@ docker run --rm -p 9009:9009 \
   --host 0.0.0.0 --port 9009 --card-url http://localhost:9009
 ```
 
-For few-shot Docker runs, append `--few-shot` to the container command.
+For few-shot Docker runs, append `--few-shot` to the container command or set `MALT_FEW_SHOT=1`.
 
 ## Local Benchmark
 

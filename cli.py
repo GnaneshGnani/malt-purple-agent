@@ -15,6 +15,13 @@ class Args:
     few_shot: bool
 
 
+def truthy_env(name: str) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def parse_args() -> Args:
     parser = argparse.ArgumentParser(
         description="Expose an LLM as an A2A-compatible purple agent for AgentBeats."
@@ -32,6 +39,8 @@ def parse_args() -> Args:
         help="Prepend the static MALT few-shot examples before the current query.",
     )
     args = parser.parse_args()
+    if not args.few_shot:
+        args.few_shot = truthy_env("MALT_FEW_SHOT")
     return Args(**vars(args))
 
 
