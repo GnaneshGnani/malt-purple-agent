@@ -27,9 +27,10 @@ def main() -> None:
         tags=["llm", "litellm", "malt", "netarena"],
     )
 
+    prompt_mode = "few-shot" if args.few_shot else "zero-shot"
     agent_card = AgentCard(
         name="MALT Purple Agent",
-        description="A2A-compatible NetArena MALT purple agent using a no-helper safety/few-shot prompt.",
+        description=f"A2A-compatible NetArena MALT purple agent using a no-helper {prompt_mode} prompt.",
         url=server_url,
         version="0.1.0",
         default_input_modes=["text"],
@@ -44,6 +45,7 @@ def main() -> None:
         api_key=args.api_key,
         api_base=args.api_base,
         api_version=args.api_version,
+        few_shot=args.few_shot,
     )
     executor = LiteLLMAgentExecutor(agent)
     request_handler = DefaultRequestHandler(
@@ -52,7 +54,7 @@ def main() -> None:
     )
     app = A2AStarletteApplication(agent_card=agent_card, http_handler=request_handler)
 
-    logger.info(f"Starting A2A server on {args.host}:{args.port}")
+    logger.info(f"Starting A2A server on {args.host}:{args.port} (few_shot={args.few_shot})")
     uvicorn.run(app.build(), host=args.host, port=args.port)
 
 

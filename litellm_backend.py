@@ -25,8 +25,10 @@ class LiteLLMAgent:
         api_key: str | None = None,
         api_base: str | None = None,
         api_version: str | None = None,
+        few_shot: bool = False,
     ):
         self.model_name = model_name
+        self.few_shot = few_shot
         if api_key is not None:
             self.api_key = api_key
         elif os.environ.get("NEBIUS_API_KEY"):
@@ -70,9 +72,10 @@ class LiteLLMAgent:
         user_content: str,
     ) -> list[dict[str, str]]:
         messages: list[dict[str, str]] = [{"role": "system", "content": MALT_SYSTEM_PROMPT}]
-        for ex in MALT_FEW_SHOT_TURNS:
-            messages.append({"role": "user", "content": ex["user"]})
-            messages.append({"role": "assistant", "content": ex["assistant"]})
+        if self.few_shot:
+            for ex in MALT_FEW_SHOT_TURNS:
+                messages.append({"role": "user", "content": ex["user"]})
+                messages.append({"role": "assistant", "content": ex["assistant"]})
         messages.append({"role": "user", "content": user_content})
         return messages
 

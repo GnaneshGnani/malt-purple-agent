@@ -12,6 +12,7 @@ class Args:
     host: str
     port: int
     card_url: str | None
+    few_shot: bool
 
 
 def parse_args() -> Args:
@@ -25,6 +26,11 @@ def parse_args() -> Args:
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind")
     parser.add_argument("--port", type=int, default=9009, help="Port to bind")
     parser.add_argument("--card-url", type=str, default=None, help="Public URL for agent card")
+    parser.add_argument(
+        "--few-shot",
+        action="store_true",
+        help="Prepend the static MALT few-shot examples before the current query.",
+    )
     args = parser.parse_args()
     return Args(**vars(args))
 

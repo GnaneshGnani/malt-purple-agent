@@ -2,7 +2,7 @@
 
 AgentBeats-compatible purple agent for the NetArena MALT data-center planning benchmark.
 
-This repo uses the **no-helper safety/few-shot prompt** for the public submission. The running agent does not mention or call benchmark helper functions such as `solid_step_*`; it asks the model to generate ordinary NetworkX code and applies a lightweight output guard before returning the response.
+This repo uses the **no-helper safety prompt** for the public submission. The running agent does not mention or call benchmark helper functions such as `solid_step_*`; it asks the model to generate ordinary NetworkX code and applies a lightweight output guard before returning the response.
 
 The helper-aware experiment is preserved separately in [`helper_prompts.py`](helper_prompts.py) for later reference. That file is intentionally not imported by the runtime and is excluded from the Docker build context.
 
@@ -12,7 +12,7 @@ The helper-aware experiment is preserved separately in [`helper_prompts.py`](hel
 |------|------|
 | [`server.py`](server.py) | A2A HTTP server entrypoint |
 | [`cli.py`](cli.py) | CLI args and default model selection |
-| [`prompts.py`](prompts.py) | Active no-helper MALT prompt and few-shot examples |
+| [`prompts.py`](prompts.py) | Active no-helper MALT prompt and optional few-shot examples |
 | [`helper_prompts.py`](helper_prompts.py) | Archived helper-aware prompt, not used at runtime |
 | [`output.py`](output.py) | Lightweight MALT output guard |
 | [`litellm_backend.py`](litellm_backend.py) | LiteLLM call path, prompt assembly, one retry on invalid output |
@@ -31,9 +31,9 @@ The active MALT prompt asks the model to:
 - Create `EK_PACKET_SWITCH` nodes with at least one child `EK_PORT`.
 - Keep `updated_graph` safe for mutation-then-text/list/count/rank tasks unless the user explicitly asks for a graph.
 
-The active prompt and active few-shot examples are in [`prompts.py`](prompts.py). They do not contain `solid_step_*` helper calls.
+The active prompt and optional few-shot examples are in [`prompts.py`](prompts.py). They do not contain `solid_step_*` helper calls.
 
-MALT is treated as one-shot: the agent does not keep or replay conversation history across requests. The few-shot examples are static prompt examples prepended to each request by default.
+MALT is treated as one-shot: the agent does not keep or replay conversation history across requests. Few-shot examples are disabled by default. Pass `--few-shot` to prepend the static examples to each request.
 
 The output guard checks only response shape and obvious unsafe/invalid code:
 
@@ -68,6 +68,12 @@ python3 server.py --host 0.0.0.0 --port 9009 --card-url http://localhost:9009
 curl -sf http://localhost:9009/.well-known/agent-card.json
 ```
 
+Enable the static examples explicitly:
+
+```bash
+python3 server.py --host 0.0.0.0 --port 9009 --card-url http://localhost:9009 --few-shot
+```
+
 ## Docker
 
 ```bash
@@ -79,6 +85,8 @@ docker run --rm -p 9009:9009 \
   malt-purple-agent:local \
   --host 0.0.0.0 --port 9009 --card-url http://localhost:9009
 ```
+
+For few-shot Docker runs, append `--few-shot` to the container command.
 
 ## Local Benchmark
 
